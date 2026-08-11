@@ -3,17 +3,20 @@
 #include <SDL3/SDL_video.h>
 #include <cstdint>
 
-struct Framebuffer {
+struct Framebuffer 
+{
     int width;
     int height;
     int pitch;        // distance in bytes between rows of pixels
     uint32_t* pixels;
 
-    Framebuffer();
+    Framebuffer() = delete;
+    Framebuffer(int winWidth, int winHeight);
     ~Framebuffer();
 };
 
-struct Color {
+struct Color 
+{
     uint8_t r, g, b;
 };
 
