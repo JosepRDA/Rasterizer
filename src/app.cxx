@@ -6,14 +6,9 @@
 #include <SDL3/SDL_video.h>
 #include <cstdint>
 #include <cstring>
+#include <iostream>
 #include <memory>
 
-constexpr int WIDTH = 800;
-constexpr int HEIGHT = 600;
-
-static SDL_Window *window;
-static SDL_Renderer *renderer;
-static SDL_Texture *texture;
 
 Application::AppPtr Application::create(int winWidth, int winHeight)
 {
@@ -21,14 +16,9 @@ Application::AppPtr Application::create(int winWidth, int winHeight)
 }
 
 Application::Application(int winWidth, int winHeight)
-    : winWidth{winWidth}, winHeight{winHeight}
+    : winWidth{winWidth}, winHeight{winHeight}, fb(winWidth, winHeight)
 {
     SDL_SetAppMetadata("Software Renderer in SDL3", "0.1", "com.renderer");
-
-    fb.width = winWidth;
-    fb.height = winHeight;
-    fb.pitch = winWidth * sizeof(uint32_t);
-    fb.pixels = new uint32_t[fb.pitch * fb.height]; // allocating stuff   
 }
 
 bool Application::init()
@@ -38,14 +28,14 @@ bool Application::init()
         return false;
     }
 
-    if(!SDL_CreateWindowAndRenderer("Software renderer", WIDTH, HEIGHT,
+    if(!SDL_CreateWindowAndRenderer("Software renderer", winWidth, winHeight,
                     SDL_WINDOW_RESIZABLE, &window, &renderer)) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
         return false;
     } 
-    SDL_SetRenderLogicalPresentation(renderer,WIDTH, HEIGHT, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+    SDL_SetRenderLogicalPresentation(renderer, winWidth, winHeight, SDL_LOGICAL_PRESENTATION_LETTERBOX);
    
-    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, WIDTH, HEIGHT);
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, winWidth, winHeight);
     if (!texture) {
         SDL_Log("Couldn't create streaming texture: %s", SDL_GetError());
         return false;
@@ -78,9 +68,9 @@ void Application::mainLoop()
         if (SDL_LockTexture(texture, NULL, &texture_pixels, &texture_pitch)) {
             for (int y = 0; y < fb.height; ++y) {
                 std::memcpy(
-                        static_cast<uint8_t*>(texture_pixels) + y * texture_pitch,
-                        reinterpret_cast<uint8_t*>(fb.pixels) + y * fb.pitch,
-                        fb.width * sizeof(uint32_t)
+                    static_cast<uint8_t*>(texture_pixels) + y * texture_pitch,
+                    reinterpret_cast<uint8_t*>(fb.pixels) + y * fb.pitch,
+                    fb.width * sizeof(uint32_t)
                 );
             }
             
@@ -104,18 +94,21 @@ void Application::mainLoop()
 Application::~Application()
 {    
     SDL_DestroyWindow(window);
+    SDL_DestroyRenderer(renderer);
     SDL_DestroyTexture(texture);
-    delete[] fb.pixels;
     SDL_Quit();
 }
 
 int main (void) {
+    constexpr int WIDTH = 800;
+    constexpr int HEIGHT = 600;
+
     auto app = Application::create(WIDTH, HEIGHT);
-    if (app->init()) {
-        app->mainLoop();
-    } else {
-        // std::println(stderr, "Error or smth");
+    if (!app->init()) {
+        std::cerr << "Failed to initialize renderer" << std::endl;
         return 1;
     }
+    app->mainLoop();
+
     return 0;
 }
