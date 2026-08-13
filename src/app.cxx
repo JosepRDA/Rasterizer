@@ -1,5 +1,6 @@
 #include "hdrs/app.hxx"
 #include "hdrs/framebuffer.hxx"
+#include <SDL3/SDL_video.h>
 #include <cstring>
 
 Application::AppPtr Application::create(int winWidth, int winHeight)
@@ -21,11 +22,11 @@ bool Application::init()
     }
 
     if(!SDL_CreateWindowAndRenderer("Software renderer", winWidth, winHeight,
-                    0, &window, &renderer)) {
+                    SDL_WINDOW_RESIZABLE, &window, &renderer)) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
         return false;
     } 
-    SDL_SetRenderLogicalPresentation(renderer, winWidth, winHeight, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+    SDL_SetRenderLogicalPresentation(renderer, winWidth, winHeight, SDL_LOGICAL_PRESENTATION_DISABLED);
 
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, winWidth, winHeight);
     if (!texture) {
