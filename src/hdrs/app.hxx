@@ -2,7 +2,6 @@
 
 #include "framebuffer.hxx"
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
 #include <memory>
 
 class Application
@@ -12,13 +11,16 @@ public:
     static AppPtr create(int winWidth, int winHeight);
 
     bool init();
+    void handleEvents();
     void mainLoop();
 
     ~Application();
 private:
     Application(int winWidth, int winHeight);
 
-    int winWidth, winHeight;
+    bool done = false;
+    int winWidth;
+    int winHeight;
     Framebuffer fb;
     SDL_Window* window;
     SDL_Renderer* renderer;

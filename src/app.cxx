@@ -1,14 +1,7 @@
 #include "hdrs/app.hxx"
 #include "hdrs/framebuffer.hxx"
-#include <SDL3/SDL_log.h>
-#include <SDL3/SDL_rect.h>
-#include <SDL3/SDL_render.h>
-#include <SDL3/SDL_surface.h>
 #include <SDL3/SDL_video.h>
-#include <cstdint>
 #include <cstring>
-#include <memory>
-
 
 Application::AppPtr Application::create(int winWidth, int winHeight)
 {
@@ -29,11 +22,11 @@ bool Application::init()
     }
 
     if(!SDL_CreateWindowAndRenderer("Software renderer", winWidth, winHeight,
-                    0, &window, &renderer)) {
+                    SDL_WINDOW_RESIZABLE, &window, &renderer)) {
         SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
         return false;
     } 
-    SDL_SetRenderLogicalPresentation(renderer, winWidth, winHeight, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+    SDL_SetRenderLogicalPresentation(renderer, winWidth, winHeight, SDL_LOGICAL_PRESENTATION_DISABLED);
 
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, winWidth, winHeight);
     if (!texture) {
@@ -44,36 +37,40 @@ bool Application::init()
     return true;
 }
 
+// not my proudest coding
+void Application::handleEvents()
+{
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_EVENT_QUIT) {
+            done = true;
+        }
+    }
+}
+
 void Application::mainLoop()
 {
-    bool done = false;
-    while (!done) {
-        SDL_Event event;
+    while (!done) 
+    {
+        handleEvents();           
 
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_EVENT_QUIT) {
-                done = true;
-            }
-        }
+        // has to be called at the start of the frame because the last draw command
+        // takes priority (overwrites the previous one, if both write to the same pixel)
+        // much like in opengl
+        fb.clearScreen(RED);
 
-        // updating the framebuffer 
-        for (int y = 0; y < fb.height; y++) {
-            for (int x = 0; x < fb.width; x++) {
-                fb.pixels[y * fb.width + x] = 0xFF0000FF; // RED, 255
+        // perform math for triangle collision here
+        // right now drawing a cyan rectangle in the middle of the screen
+        for (int y = 150; y < fb.height - 200; y++) {
+            for (int x = 100; x < fb.width - 300; x++) {
+                fb.pixels[y * fb.width + x] = CYAN; // RED, 255
             }
         }
 
         void* texture_pixels;
         int texture_pitch;
         if (SDL_LockTexture(texture, NULL, &texture_pixels, &texture_pitch)) {
-            for (int y = 0; y < fb.height; ++y) {
-                std::memcpy(
-                    static_cast<uint8_t*>(texture_pixels) + y * texture_pitch,
-                    reinterpret_cast<uint8_t*>(fb.pixels) + y * fb.pitch,
-                    fb.width * sizeof(uint32_t)
-                );
-            }
-
+            fb.write(texture_pixels, texture_pitch);
             SDL_UnlockTexture(texture);
         }
 

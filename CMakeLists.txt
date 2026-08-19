@@ -29,7 +29,6 @@ endif()
 add_executable(${PROJECT_NAME} 
     src/app.cxx 
     src/framebuffer.cxx 
-    src/math.cxx
 )
 
 # set the include directory
@@ -37,6 +36,9 @@ target_include_directories(${PROJECT_NAME}  PRIVATE ${SDL3_INCLUDE_DIRS})
 
 # link all libraries to the project
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3)
+
+# the math header is a header only library, sort of
+target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/hdrs/math.hxx)
 
 if (WIN32)
     add_custom_command(
